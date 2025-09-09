@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_BASE = '/api';
+const API_BASE = 'https://your-render-app.onrender.com/api';
+
 
 function App() {
     const [chain, setChain] = useState([]);
