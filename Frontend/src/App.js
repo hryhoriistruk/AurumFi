@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_BASE = 'https://https://aurumfi-7.onrender.com/api';
+// const API_BASE = 'https://https://aurumfi-7.onrender.com/api';
+const API_BASE = '/api';
 
 
 function App() {
