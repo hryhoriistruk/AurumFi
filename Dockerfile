@@ -15,7 +15,7 @@ COPY Backend/ ./Backend/
 COPY Other files as needed...
 
 # Build the frontend
-RUN npm run build
+RUN npm start
 
 EXPOSE 3000
 
