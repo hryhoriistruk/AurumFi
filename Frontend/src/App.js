@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_BASE = 'https://https://aurumfi-7.onrender.com/api';
-
+const API_BASE = 'http://localhost:8081/api/blockchain';
 
 function App() {
     const [chain, setChain] = useState([]);
@@ -23,53 +22,124 @@ function App() {
     const fetchBlockchain = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/blockchain`);
-            const data = await res.json();
-            setChain(data.chain || []);
-            setPendingTxs(data.pendingTransactions || []);
+            const [chainRes, infoRes, pendingRes] = await Promise.all([
+                fetch(`${API_BASE}/chain`),
+                fetch(`${API_BASE}/info`),
+                fetch(`${API_BASE}/pending`).catch(() => ({ ok: false }))
+            ]);
+
+            if (chainRes.ok) {
+                const chainData = await chainRes.json();
+                setChain(chainData.chain || []);
+            }
+
+            if (pendingRes.ok) {
+                const pendingData = await pendingRes.json();
+                setPendingTxs(pendingData || []);
+            } else {
+                setPendingTxs([]);
+            }
         } catch (error) {
-            console.error('Error fetching blockchain:', error);
-            setMessage('Error connecting to server');
+            // console.error('Error fetching blockchain:', error);
+            // setMessage('Error connecting to server');
         }
         setIsLoading(false);
     };
 
     const fetchBalance = async () => {
-        if (!address) return;
+        if (!address) {
+            setMessage('Please enter wallet address');
+            return;
+        }
         setIsLoading(true);
         try {
             const res = await fetch(`${API_BASE}/balance/${encodeURIComponent(address)}`);
-            const data = await res.json();
-            setBalance(data.balance || 0);
+            if (res.ok) {
+                const data = await res.json();
+                setBalance(data.balance || 0);
+                setMessage(`✅ Balance: ${formatBalance(data.balance || 0)} AUF`);
+            } else {
+                // const errorData = await res.json().catch(() => ({}));
+                // setMessage(`❌ ${errorData.error || 'Failed to fetch balance'}`);
+            }
         } catch (error) {
-            console.error('Error fetching balance:', error);
+            // console.error('Error fetching balance:', error);
+            // setMessage('❌ Network error fetching balance');
+        }
+        setIsLoading(false);
+    };
+
+    const getTestFunds = async () => {
+        if (!address) {
+            setMessage('Please enter your address first');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_BASE}/faucet`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    address: address
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`✅ ${data.message}`);
+                fetchBalance();
+            } else {
+                // setMessage(`❌ ${data.error}`);
+            }
+        } catch (error) {
+            // setMessage('❌ Error getting test funds');
         }
         setIsLoading(false);
     };
 
     const sendTransaction = async () => {
         if (!address || !toAddress || !amount) {
-            setMessage('Please fill all transaction fields');
+            setMessage('Please fill all fields');
             return;
         }
+
+        if (parseFloat(amount) <= 0) {
+            setMessage('Amount must be greater than 0');
+            return;
+        }
+
         setIsLoading(true);
         try {
-            const tx = { fromAddress: address, toAddress, amount: parseFloat(amount) };
-            const res = await fetch(`${API_BASE}/transactions`, {
+            const response = await fetch(`${API_BASE}/transaction`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(tx),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fromAddress: address,
+                    toAddress: toAddress,
+                    amount: parseFloat(amount)
+                })
             });
-            const data = await res.json();
-            if (res.ok) {
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
                 setMessage('✅ Transaction added successfully!');
+                setToAddress('');
+                setAmount('');
                 fetchBlockchain();
+                fetchBalance();
             } else {
-                setMessage(`❌ ${data.error || 'Transaction failed'}`);
+                // setMessage(`❌ ${data.error || 'Transaction failed'}`);
+                // console.error('Transaction error details:', data);
             }
         } catch (error) {
-            console.error('Error sending transaction:', error);
-            setMessage('❌ Error sending transaction');
+            // console.error('Network error:', error);
+            // setMessage('❌ Network error: Could not connect to server');
         }
         setIsLoading(false);
     };
@@ -81,16 +151,27 @@ function App() {
         }
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/mine?minerAddress=${encodeURIComponent(minerAddress)}`, {
-                method: 'POST'
+            const response = await fetch(`${API_BASE}/mine`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    minerAddress: minerAddress
+                })
             });
-            const data = await res.json();
-            setMessage(`⛏️ ${data.message || 'Block mined successfully!'}`);
-            fetchBlockchain();
-            fetchBalance();
+
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`⛏️ ${data.message || 'Block mined successfully!'}`);
+                fetchBlockchain();
+                fetchBalance();
+            } else {
+                // setMessage(`❌ ${data.error || 'Mining failed'}`);
+            }
         } catch (error) {
-            console.error('Error mining block:', error);
-            setMessage('❌ Error mining block');
+            // console.error('Error mining block:', error);
+            // setMessage('❌ Error mining block');
         }
         setIsLoading(false);
     };
@@ -100,12 +181,15 @@ function App() {
     };
 
     const formatBalance = (balance) => {
-        return balance.toFixed(6);
+        return parseFloat(balance || 0).toFixed(6);
+    };
+
+    const getPendingCount = () => {
+        return pendingTxs.length;
     };
 
     return (
         <div className="app">
-            {/* Header */}
             <header className="header">
                 <div className="header-content">
                     <h1 className="logo">
@@ -119,44 +203,28 @@ function App() {
                 </div>
             </header>
 
-            {/* Main Content */}
             <main className="main-content">
-                {/* Navigation Tabs */}
                 <nav className="tabs">
-                    <button
-                        className={`tab ${activeTab === 'blockchain' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('blockchain')}
-                    >
+                    <button className={`tab ${activeTab === 'blockchain' ? 'active' : ''}`} onClick={() => setActiveTab('blockchain')}>
                         ⛓️ Blockchain
                     </button>
-                    <button
-                        className={`tab ${activeTab === 'wallet' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('wallet')}
-                    >
+                    <button className={`tab ${activeTab === 'wallet' ? 'active' : ''}`} onClick={() => setActiveTab('wallet')}>
                         💰 Wallet
                     </button>
-                    <button
-                        className={`tab ${activeTab === 'send' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('send')}
-                    >
+                    <button className={`tab ${activeTab === 'send' ? 'active' : ''}`} onClick={() => setActiveTab('send')}>
                         📤 Send
                     </button>
-                    <button
-                        className={`tab ${activeTab === 'mine' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('mine')}
-                    >
+                    <button className={`tab ${activeTab === 'mine' ? 'active' : ''}`} onClick={() => setActiveTab('mine')}>
                         ⛏️ Mine
                     </button>
                 </nav>
 
-                {/* Message Display */}
                 {message && (
-                    <div className={`message ${message.includes('❌') ? 'error' : 'success'}`}>
+                    <div className={`message ${message.includes('❌') ? 'error' : message.includes('✅') ? 'success' : 'info'}`}>
                         {message}
                     </div>
                 )}
 
-                {/* Loading Indicator */}
                 {isLoading && (
                     <div className="loading">
                         <div className="spinner"></div>
@@ -164,7 +232,6 @@ function App() {
                     </div>
                 )}
 
-                {/* Blockchain Tab */}
                 {activeTab === 'blockchain' && (
                     <div className="tab-content">
                         <div className="stats-grid">
@@ -174,7 +241,7 @@ function App() {
                             </div>
                             <div className="stat-card">
                                 <h3>Pending Transactions</h3>
-                                <span className="stat-number">{pendingTxs.length}</span>
+                                <span className="stat-number">{getPendingCount()}</span>
                             </div>
                             <div className="stat-card">
                                 <h3>Total Transactions</h3>
@@ -187,15 +254,16 @@ function App() {
                         <div className="blockchain-section">
                             <h2>Latest Blocks</h2>
                             <div className="blocks-grid">
-                                {chain.slice().reverse().map((block, i) => (
-                                    <div key={i} className="block-card">
+                                {chain.slice().reverse().map((block, index) => (
+                                    <div key={index} className="block-card">
                                         <div className="block-header">
-                                            <span className="block-number">Block #{chain.length - i - 1}</span>
+                                            <span className="block-number">Block #{chain.length - index - 1}</span>
                                             <span className="block-hash">{formatHash(block.hash)}</span>
                                         </div>
                                         <div className="block-details">
                                             <p>Transactions: {block.transactions?.length || 0}</p>
                                             <p>Previous: {formatHash(block.previousHash)}</p>
+                                            <p>Nonce: {block.nonce || 0}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -203,11 +271,11 @@ function App() {
                         </div>
 
                         <div className="transactions-section">
-                            <h2>Pending Transactions</h2>
-                            {pendingTxs.length > 0 ? (
+                            <h2>Pending Transactions ({getPendingCount()})</h2>
+                            {getPendingCount() > 0 ? (
                                 <div className="transactions-list">
-                                    {pendingTxs.map((tx, i) => (
-                                        <div key={i} className="transaction-card">
+                                    {pendingTxs.map((tx, index) => (
+                                        <div key={index} className="transaction-card">
                                             <div className="transaction-header">
                                                 <span className="tx-type">
                                                     {tx.fromAddress ? 'Transfer' : 'Reward'}
@@ -217,6 +285,7 @@ function App() {
                                             <div className="transaction-details">
                                                 <p>From: {tx.fromAddress || 'System'}</p>
                                                 <p>To: {tx.toAddress}</p>
+                                                {tx.timestamp && <p>Time: {new Date(tx.timestamp).toLocaleTimeString()}</p>}
                                             </div>
                                         </div>
                                     ))}
@@ -228,7 +297,6 @@ function App() {
                     </div>
                 )}
 
-                {/* Wallet Tab */}
                 {activeTab === 'wallet' && (
                     <div className="tab-content">
                         <div className="wallet-card">
@@ -245,15 +313,28 @@ function App() {
                                     onChange={(e) => setAddress(e.target.value)}
                                     className="address-input"
                                 />
-                                <button onClick={fetchBalance} className="check-balance-btn">
+                                <button onClick={fetchBalance} className="check-balance-btn" disabled={!address}>
                                     Check Balance
                                 </button>
                             </div>
+                            {balance === 0 && (
+                                <div className="wallet-actions">
+                                    <button onClick={getTestFunds} className="faucet-btn">
+                                        🚰 Get Test Funds (1000 AUF)
+                                    </button>
+                                </div>
+                            )}
+                            {balance > 0 && (
+                                <div className="wallet-actions">
+                                    <button onClick={() => setActiveTab('send')} className="send-from-wallet-btn">
+                                        Send AUF
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
 
-                {/* Send Tab */}
                 {activeTab === 'send' && (
                     <div className="tab-content">
                         <div className="send-card">
@@ -287,16 +368,23 @@ function App() {
                                     onChange={(e) => setAmount(e.target.value)}
                                     className="form-input"
                                     step="0.000001"
+                                    min="0.000001"
                                 />
                             </div>
-                            <button onClick={sendTransaction} className="send-btn">
+                            <div className="balance-info">
+                                Current balance: {formatBalance(balance)} AUF
+                            </div>
+                            <button
+                                onClick={sendTransaction}
+                                className="send-btn"
+                                disabled={!address || !toAddress || !amount || parseFloat(amount) <= 0}
+                            >
                                 Send Transaction
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Mine Tab */}
                 {activeTab === 'mine' && (
                     <div className="tab-content">
                         <div className="mine-card">
@@ -304,7 +392,8 @@ function App() {
                             <div className="mining-info">
                                 <p>Mine pending transactions and earn mining rewards</p>
                                 <div className="mining-stats">
-                                    <span>Pending: {pendingTxs.length} transactions</span>
+                                    <span>Pending: {getPendingCount()} transactions</span>
+                                    <span>Mining reward: 10 AUF</span>
                                 </div>
                             </div>
                             <div className="form-group">
@@ -317,7 +406,11 @@ function App() {
                                     className="form-input"
                                 />
                             </div>
-                            <button onClick={mineBlock} className="mine-btn">
+                            <button
+                                onClick={mineBlock}
+                                className="mine-btn"
+                                disabled={!minerAddress || getPendingCount() === 0}
+                            >
                                 ⛏️ Start Mining
                             </button>
                         </div>
@@ -325,9 +418,8 @@ function App() {
                 )}
             </main>
 
-            {/* Footer */}
             <footer className="footer">
-                <p>© 2024 AurumFi Blockchain Explorer | Built with React & Spring Boot</p>
+                <p>© 2024 AurumFi Blockchain Explorer</p>
             </footer>
         </div>
     );
