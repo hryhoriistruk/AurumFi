@@ -1,5 +1,22 @@
-FROM openjdk:11-jre-slim
+FROM node:18-alpine
+
 WORKDIR /app
-COPY target/aurumfi-backend-1.0.0.jar app.jar
-EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+
+# Copy only package files first for better caching
+COPY package*.json ./
+COPY yarn.lock ./
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend specific files if you have a frontend directory
+COPY Frontend/ ./Frontend/
+COPY Backend/ ./Backend/
+COPY Other files as needed...
+
+# Build the frontend
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
