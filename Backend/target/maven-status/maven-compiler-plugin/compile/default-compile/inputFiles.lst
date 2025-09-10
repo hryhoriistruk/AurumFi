@@ -1,0 +1,15 @@
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/controller/TestController.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/model/Transaction.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/token/AurumToken.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/controller/BlockchainController.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/controller/AdminController.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/config/CorsConfig.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/AurumFiApplication.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/controller/ExchangeController.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/util/CryptoUtils.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/model/TransactionInput.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/controller/MarketplaceController.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/model/Wallet.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/model/Block.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/core/Blockchain.java
+/Users/grigorii/IdeaProjects/AurumFi899/Backend/src/main/java/com/aurumfi/model/TransactionOutput.java
