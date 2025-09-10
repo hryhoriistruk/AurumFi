@@ -443,3 +443,135 @@ body {
         flex-direction: column;
     }
 }
+
+/* ... (existing styles) ... */
+
+/* Exchange Styles */
+.exchange-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.order-placement-card, .order-book-card, .trade-history-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.order-book-card {
+    grid-column: 2; /* Place order book on the right */
+    grid-row: 1 / span 2; /* Span two rows */
+    display: flex;
+    flex-direction: column;
+}
+
+.trade-history-card {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.order-book-section {
+    margin-bottom: 1.5rem;
+}
+
+.order-book-section h4 {
+    margin-bottom: 0.75rem;
+    color: #374151;
+}
+
+.order-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px; /* Limit height for scrollability */
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.order-list li {
+    padding: 0.5rem;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.order-list li:last-child {
+    border-bottom: none;
+}
+
+.sell-orders li {
+    color: #dc2626; /* Red for sell orders */
+}
+
+.buy-orders li {
+    color: #059669; /* Green for buy orders */
+}
+
+.trade-list {
+    list-style: none;
+    padding: 0;
+    max-height: 300px; /* Limit height for scrollability */
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.trade-list li {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.trade-list li:last-child {
+    border-bottom: none;
+}
+
+.trade-list p {
+    margin: 0.2rem 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+/* Admin Styles */
+.admin-login-card, .admin-action-card {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard {
+    /* Styles for the overall admin dashboard layout */
+}
+
+.admin-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.admin-action-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments for exchange and admin */
+@media (max-width: 768px) {
+    .exchange-grid {
+        grid-template-columns: 1fr; /* Stack columns on small screens */
+    }
+    .order-book-card {
+        grid-column: 1;
+        grid-row: auto;
+    }
+    .admin-actions-grid {
+        grid-template-columns: 1fr;
+    }
+}

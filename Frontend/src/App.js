@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const API_BASE = 'http://localhost:8081/api/blockchain';
+const EXCHANGE_API_BASE = 'http://localhost:8081/api/exchange';
+const ADMIN_API_BASE = 'http://localhost:8081/api/admin';
 
 function App() {
     const [chain, setChain] = useState([]);
@@ -15,16 +17,39 @@ function App() {
     const [activeTab, setActiveTab] = useState('blockchain');
     const [isLoading, setIsLoading] = useState(false);
 
+    // Exchange states
+    const [orderBook, setOrderBook] = useState({ buyOrders: {}, sellOrders: {} });
+    const [tradeHistory, setTradeHistory] = useState([]);
+    const [orderType, setOrderType] = useState('buy'); // 'buy' or 'sell'
+    const [orderAmount, setOrderAmount] = useState('');
+    const [orderPrice, setOrderPrice] = useState('');
+
+    // Admin states
+    const [adminUsername, setAdminUsername] = useState('');
+    const [adminPassword, setAdminPassword] = useState('');
+    const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken') || '');
+    const [adminBlockchainStats, setAdminBlockchainStats] = useState(null);
+    const [mintRecipient, setMintRecipient] = useState('');
+    const [mintAmount, setMintAmount] = useState('');
+    const [burnAddress, setBurnAddress] = useState('');
+    const [burnAmount, setBurnAmount] = useState('');
+
     useEffect(() => {
         fetchBlockchain();
-    }, []);
+        if (activeTab === 'exchange') {
+            fetchOrderBook();
+            fetchTradeHistory();
+        }
+        if (activeTab === 'admin' && adminToken) {
+            fetchAdminBlockchainStats();
+        }
+    }, [activeTab, adminToken]);
 
     const fetchBlockchain = async () => {
         setIsLoading(true);
         try {
-            const [chainRes, infoRes, pendingRes] = await Promise.all([
+            const [chainRes, pendingRes] = await Promise.all([
                 fetch(`${API_BASE}/chain`),
-                fetch(`${API_BASE}/info`),
                 fetch(`${API_BASE}/pending`).catch(() => ({ ok: false }))
             ]);
 
@@ -41,50 +66,45 @@ function App() {
             }
         } catch (error) {
             // console.error('Error fetching blockchain:', error);
-            // setMessage('Error connecting to server');
+            // setMessage('Error connecting to server or fetching blockchain data.');
         }
         setIsLoading(false);
     };
 
     const fetchBalance = async () => {
-        if (!address) {
-            setMessage('Please enter wallet address');
-            return;
-        }
+        // if (!address) {
+        //     setMessage('Please enter wallet address');
+        //     return;
+        // }
         setIsLoading(true);
         try {
             const res = await fetch(`${API_BASE}/balance/${encodeURIComponent(address)}`);
             if (res.ok) {
                 const data = await res.json();
                 setBalance(data.balance || 0);
-                setMessage(`✅ Balance: ${formatBalance(data.balance || 0)} AUF`);
+                setMessage(`✅ Balance: ${formatBalance(data.balance || 0)} AUR`);
             } else {
-                // const errorData = await res.json().catch(() => ({}));
+                const errorData = await res.json().catch(() => ({}));
                 // setMessage(`❌ ${errorData.error || 'Failed to fetch balance'}`);
             }
         } catch (error) {
-            // console.error('Error fetching balance:', error);
-            // setMessage('❌ Network error fetching balance');
+            console.error('Error fetching balance:', error);
+            setMessage('❌ Network error fetching balance');
         }
         setIsLoading(false);
     };
 
     const getTestFunds = async () => {
-        if (!address) {
-            setMessage('Please enter your address first');
-            return;
-        }
-
+        // if (!address) {
+        //     setMessage('Please enter your address first');
+        //     return;
+        // }
         setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE}/faucet`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    address: address
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: address })
             });
 
             const data = await response.json();
@@ -101,23 +121,19 @@ function App() {
     };
 
     const sendTransaction = async () => {
-        if (!address || !toAddress || !amount) {
-            setMessage('Please fill all fields');
-            return;
-        }
-
-        if (parseFloat(amount) <= 0) {
-            setMessage('Amount must be greater than 0');
-            return;
-        }
-
+        // if (!address || !toAddress || !amount) {
+        //     setMessage('Please fill all fields');
+        //     return;
+        // }
+        // if (parseFloat(amount) <= 0) {
+        //     setMessage('Amount must be greater than 0');
+        //     return;
+        // }
         setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE}/transaction`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     fromAddress: address,
                     toAddress: toAddress,
@@ -126,7 +142,6 @@ function App() {
             });
 
             const data = await response.json().catch(() => ({}));
-
             if (response.ok) {
                 setMessage('✅ Transaction added successfully!');
                 setToAddress('');
@@ -138,27 +153,23 @@ function App() {
                 // console.error('Transaction error details:', data);
             }
         } catch (error) {
-            // console.error('Network error:', error);
+            console.error('Network error:', error);
             // setMessage('❌ Network error: Could not connect to server');
         }
         setIsLoading(false);
     };
 
     const mineBlock = async () => {
-        if (!minerAddress) {
-            setMessage('Please enter miner address');
-            return;
-        }
+        // if (!minerAddress) {
+        //     setMessage('Please enter miner address');
+        //     return;
+        // }
         setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE}/mine`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    minerAddress: minerAddress
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ minerAddress: minerAddress })
             });
 
             const data = await response.json();
@@ -172,6 +183,204 @@ function App() {
         } catch (error) {
             // console.error('Error mining block:', error);
             // setMessage('❌ Error mining block');
+        }
+        setIsLoading(false);
+    };
+
+    const fetchOrderBook = async () => {
+        try {
+            const res = await fetch(`${EXCHANGE_API_BASE}/orderbook`);
+            if (res.ok) {
+                const data = await res.json();
+                setOrderBook(data);
+            } else {
+                // console.error('Failed to fetch order book');
+            }
+        } catch (error) {
+            // console.error('Network error fetching order book:', error);
+        }
+    };
+
+    const fetchTradeHistory = async () => {
+        try {
+            const res = await fetch(`${EXCHANGE_API_BASE}/tradehistory`);
+            if (res.ok) {
+                const data = await res.json();
+                setTradeHistory(data);
+            } else {
+                // console.error('Failed to fetch trade history');
+            }
+        } catch (error) {
+            console.error('Network error fetching trade history:', error);
+        }
+    };
+
+    const placeOrder = async () => {
+        // if (!address || !orderAmount || !orderPrice) {
+        //     setMessage('Please fill all order fields');
+        //     return;
+        // }
+        // if (parseFloat(orderAmount) <= 0 || parseFloat(orderPrice) <= 0) {
+        //     setMessage('Amount and price must be positive');
+        //     return;
+        // }
+        setIsLoading(true);
+        try {
+            const endpoint = orderType === 'buy' ? '/buy' : '/sell';
+            const response = await fetch(`${EXCHANGE_API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    address: address,
+                    amount: parseFloat(orderAmount),
+                    price: parseFloat(orderPrice)
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`✅ ${orderType === 'buy' ? 'Buy' : 'Sell'} order placed successfully!`);
+                setOrderAmount('');
+                setOrderPrice('');
+                fetchOrderBook();
+                fetchTradeHistory();
+                fetchBalance();
+            } else {
+                // setMessage(`❌ ${data.error || 'Order placement failed'}`);
+            }
+        } catch (error) {
+            console.error('Network error placing order:', error);
+            setMessage('❌ Network error: Could not connect to exchange');
+        }
+        setIsLoading(false);
+    };
+
+    const handleAdminLogin = async () => {
+        // Disabled admin login checks and requests
+        /*
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${ADMIN_API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: adminUsername, password: adminPassword })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setAdminToken(data.token);
+                localStorage.setItem('adminToken', data.token);
+                setMessage('✅ Admin login successful!');
+                fetchAdminBlockchainStats();
+            } else {
+                setMessage(`❌ ${data.error || 'Admin login failed'}`);
+            }
+        } catch (error) {
+            // console.error('Admin login error:', error);
+            // setMessage('❌ Network error during admin login');
+        }
+        setIsLoading(false);
+        */
+    };
+
+    const handleAdminLogout = () => {
+        setAdminToken('');
+        localStorage.removeItem('adminToken');
+        setAdminUsername('');
+        setAdminPassword('');
+        setAdminBlockchainStats(null);
+        setMessage('👋 Admin logged out.');
+    };
+
+    const fetchAdminBlockchainStats = async () => {
+        if (!adminToken) return;
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${ADMIN_API_BASE}/blockchain-stats`, {
+                headers: { 'Authorization': adminToken }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setAdminBlockchainStats(data);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                // setMessage(`❌ Failed to fetch admin stats: ${errorData.error || response.statusText}`);
+                // if (response.status === 401) handleAdminLogout();
+            }
+        } catch (error) {
+            // console.error('Error fetching admin stats:', error);
+            // setMessage('❌ Network error fetching admin stats');
+        }
+        setIsLoading(false);
+    };
+
+    const handleMintTokens = async () => {
+        // if (!adminToken || !mintRecipient || !mintAmount) {
+        //     setMessage('Please fill all mint fields');
+        //     return;
+        // }
+        // if (parseFloat(mintAmount) <= 0) {
+        //     setMessage('Mint amount must be positive');
+        //     return;
+        // }
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${ADMIN_API_BASE}/mint-tokens`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': adminToken
+                },
+                body: JSON.stringify({ recipientAddress: mintRecipient, amount: parseFloat(mintAmount) })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`✅ ${data.message}`);
+                setMintRecipient('');
+                setMintAmount('');
+                fetchAdminBlockchainStats();
+            } else {
+                // setMessage(`❌ ${data.error || 'Minting failed'}`);
+                // if (response.status === 401) handleAdminLogout();
+            }
+        } catch (error) {
+            // console.error('Error minting tokens:', error);
+            // setMessage('❌ Network error minting tokens');
+        }
+        setIsLoading(false);
+    };
+
+    const handleBurnTokens = async () => {
+        // if (!adminToken || !burnAddress || !burnAmount) {
+        //     setMessage('Please fill all burn fields');
+        //     return;
+        // }
+        // if (parseFloat(burnAmount) <= 0) {
+        //     setMessage('Burn amount must be positive');
+        //     return;
+        // }
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${ADMIN_API_BASE}/burn-tokens`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': adminToken
+                },
+                body: JSON.stringify({ address: burnAddress, amount: parseFloat(burnAmount) })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`✅ ${data.message}`);
+                setBurnAddress('');
+                setBurnAmount('');
+                fetchAdminBlockchainStats();
+            } else {
+                // setMessage(`❌ ${data.error || 'Burning failed'}`);
+                // if (response.status === 401) handleAdminLogout();
+            }
+        } catch (error) {
+            // console.error('Error burning tokens:', error);
+            // setMessage('❌ Network error burning tokens');
         }
         setIsLoading(false);
     };
@@ -216,6 +425,12 @@ function App() {
                     </button>
                     <button className={`tab ${activeTab === 'mine' ? 'active' : ''}`} onClick={() => setActiveTab('mine')}>
                         ⛏️ Mine
+                    </button>
+                    <button className={`tab ${activeTab === 'exchange' ? 'active' : ''}`} onClick={() => setActiveTab('exchange')}>
+                        📈 Exchange
+                    </button>
+                    <button className={`tab ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
+                        ⚙️ Admin
                     </button>
                 </nav>
 
@@ -280,7 +495,7 @@ function App() {
                                                 <span className="tx-type">
                                                     {tx.fromAddress ? 'Transfer' : 'Reward'}
                                                 </span>
-                                                <span className="tx-amount">{formatBalance(tx.amount)} AUF</span>
+                                                <span className="tx-amount">{formatBalance(tx.amount)} AUR</span>
                                             </div>
                                             <div className="transaction-details">
                                                 <p>From: {tx.fromAddress || 'System'}</p>
@@ -303,7 +518,7 @@ function App() {
                             <h2>Wallet Balance</h2>
                             <div className="balance-display">
                                 <span className="balance-amount">{formatBalance(balance)}</span>
-                                <span className="balance-currency">AUF</span>
+                                <span className="balance-currency">AUR</span>
                             </div>
                             <div className="address-input-group">
                                 <input
@@ -313,21 +528,21 @@ function App() {
                                     onChange={(e) => setAddress(e.target.value)}
                                     className="address-input"
                                 />
-                                <button onClick={fetchBalance} className="check-balance-btn" disabled={!address}>
+                                <button onClick={fetchBalance} className="check-balance-btn">
                                     Check Balance
                                 </button>
                             </div>
                             {balance === 0 && (
                                 <div className="wallet-actions">
                                     <button onClick={getTestFunds} className="faucet-btn">
-                                        🚰 Get Test Funds (1000 AUF)
+                                        🚰 Get Test Funds (1000 AUR)
                                     </button>
                                 </div>
                             )}
                             {balance > 0 && (
                                 <div className="wallet-actions">
                                     <button onClick={() => setActiveTab('send')} className="send-from-wallet-btn">
-                                        Send AUF
+                                        Send AUR
                                     </button>
                                 </div>
                             )}
@@ -360,7 +575,7 @@ function App() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Amount (AUF)</label>
+                                <label>Amount (AUR)</label>
                                 <input
                                     type="number"
                                     placeholder="0.00"
@@ -372,12 +587,11 @@ function App() {
                                 />
                             </div>
                             <div className="balance-info">
-                                Current balance: {formatBalance(balance)} AUF
+                                Current balance: {formatBalance(balance)} AUR
                             </div>
                             <button
                                 onClick={sendTransaction}
                                 className="send-btn"
-                                disabled={!address || !toAddress || !amount || parseFloat(amount) <= 0}
                             >
                                 Send Transaction
                             </button>
@@ -393,7 +607,7 @@ function App() {
                                 <p>Mine pending transactions and earn mining rewards</p>
                                 <div className="mining-stats">
                                     <span>Pending: {getPendingCount()} transactions</span>
-                                    <span>Mining reward: 10 AUF</span>
+                                    <span>Mining reward: 50 AUR</span>
                                 </div>
                             </div>
                             <div className="form-group">
@@ -409,11 +623,262 @@ function App() {
                             <button
                                 onClick={mineBlock}
                                 className="mine-btn"
-                                disabled={!minerAddress || getPendingCount() === 0}
                             >
                                 ⛏️ Start Mining
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'exchange' && (
+                    <div className="tab-content">
+                        <h2>AurumFi Exchange</h2>
+                        <div className="exchange-grid">
+                            <div className="order-placement-card">
+                                <h3>Place New Order</h3>
+                                <div className="form-group">
+                                    <label>Your Address</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Your wallet address"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Order Type</label>
+                                    <select
+                                        value={orderType}
+                                        onChange={(e) => setOrderType(e.target.value)}
+                                        className="form-input"
+                                    >
+                                        <option value="buy">Buy AUR</option>
+                                        <option value="sell">Sell AUR</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Amount (AUR)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={orderAmount}
+                                        onChange={(e) => setOrderAmount(e.target.value)}
+                                        className="form-input"
+                                        step="0.000001"
+                                        min="0.000001"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Price (per AUR)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={orderPrice}
+                                        onChange={(e) => setOrderPrice(e.target.value)}
+                                        className="form-input"
+                                        step="0.000001"
+                                        min="0.000001"
+                                    />
+                                </div>
+                                <button
+                                    onClick={placeOrder}
+                                    className="send-btn"
+                                >
+                                    Place {orderType === 'buy' ? 'Buy' : 'Sell'} Order
+                                </button>
+                            </div>
+
+                            <div className="order-book-card">
+                                <h3>Order Book</h3>
+                                <div className="order-book-section">
+                                    <h4>Sell Orders (Ask)</h4>
+                                    {Object.keys(orderBook.sellOrders).length > 0 ? (
+                                        <ul className="order-list sell-orders">
+                                            {Object.entries(orderBook.sellOrders)
+                                                .sort(([priceA], [priceB]) => parseFloat(priceA) - parseFloat(priceB))
+                                                .map(([price, orders]) => (
+                                                    <li key={price}>
+                                                        <strong>Price: {parseFloat(price).toFixed(6)}</strong>
+                                                        <ul>
+                                                            {orders.map((order, idx) => (
+                                                                <li key={idx}>
+                                                                    Amount: {formatBalance(order.amount)} ({formatHash(order.address)})
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="empty-state">No sell orders</p>
+                                    )}
+                                </div>
+                                <div className="order-book-section">
+                                    <h4>Buy Orders (Bid)</h4>
+                                    {Object.keys(orderBook.buyOrders).length > 0 ? (
+                                        <ul className="order-list buy-orders">
+                                            {Object.entries(orderBook.buyOrders)
+                                                .sort(([priceA], [priceB]) => parseFloat(priceB) - parseFloat(priceA))
+                                                .map(([price, orders]) => (
+                                                    <li key={price}>
+                                                        <strong>Price: {parseFloat(price).toFixed(6)}</strong>
+                                                        <ul>
+                                                            {orders.map((order, idx) => (
+                                                                <li key={idx}>
+                                                                    Amount: {formatBalance(order.amount)} ({formatHash(order.address)})
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="empty-state">No buy orders</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="trade-history-card">
+                                <h3>Trade History</h3>
+                                {tradeHistory.length > 0 ? (
+                                    <ul className="trade-list">
+                                        {tradeHistory.slice().reverse().map((trade, index) => (
+                                            <li key={index}>
+                                                <p><strong>Amount: {formatBalance(trade.amount)} AUR</strong></p>
+                                                <p>Price: {parseFloat(trade.price).toFixed(6)}</p>
+                                                <p>Buyer: {formatHash(trade.buyer)}</p>
+                                                <p>Seller: {formatHash(trade.seller)}</p>
+                                                <p>Time: {new Date(trade.timestamp).toLocaleTimeString()}</p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="empty-state">No recent trades</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'admin' && (
+                    <div className="tab-content">
+                        <h2>Admin Panel</h2>
+                        {!adminToken ? (
+                            <div className="admin-login-card">
+                                <h3>Admin Login</h3>
+                                <div className="form-group">
+                                    <label>Username</label>
+                                    <input
+                                        type="text"
+                                        value={adminUsername}
+                                        onChange={(e) => setAdminUsername(e.target.value)}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Password</label>
+                                    <input
+                                        type="password"
+                                        value={adminPassword}
+                                        onChange={(e) => setAdminPassword(e.target.value)}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <button onClick={handleAdminLogin} className="send-btn">
+                                    Login
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="admin-dashboard">
+                                <button onClick={handleAdminLogout} className="mine-btn" style={{ float: 'right' }}>
+                                    Logout
+                                </button>
+                                <h3>Blockchain Overview (Admin)</h3>
+                                {adminBlockchainStats ? (
+                                    <div className="stats-grid">
+                                        <div className="stat-card">
+                                            <h3>Total Blocks</h3>
+                                            <span className="stat-number">{adminBlockchainStats.blockCount}</span>
+                                        </div>
+                                        <div className="stat-card">
+                                            <h3>Pending Transactions</h3>
+                                            <span className="stat-number">{adminBlockchainStats.pendingTransactions}</span>
+                                        </div>
+                                        <div className="stat-card">
+                                            <h3>Total Supply (AUR)</h3>
+                                            <span className="stat-number">{formatBalance(adminBlockchainStats.totalSupply)}</span>
+                                        </div>
+                                        <div className="stat-card">
+                                            <h3>Difficulty</h3>
+                                            <span className="stat-number">{adminBlockchainStats.difficulty}</span>
+                                        </div>
+                                        <div className="stat-card">
+                                            <h3>Chain Valid?</h3>
+                                            <span className="stat-number">{adminBlockchainStats.isValid ? 'Yes' : 'No'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p>Loading admin stats...</p>
+                                )}
+
+                                <div className="admin-actions-grid">
+                                    <div className="admin-action-card">
+                                        <h3>Mint Tokens</h3>
+                                        <div className="form-group">
+                                            <label>Recipient Address</label>
+                                            <input
+                                                type="text"
+                                                value={mintRecipient}
+                                                onChange={(e) => setMintRecipient(e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Amount</label>
+                                            <input
+                                                type="number"
+                                                value={mintAmount}
+                                                onChange={(e) => setMintAmount(e.target.value)}
+                                                className="form-input"
+                                                step="0.000001"
+                                                min="0.000001"
+                                            />
+                                        </div>
+                                        <button onClick={handleMintTokens} className="send-btn">
+                                            Mint
+                                        </button>
+                                    </div>
+
+                                    <div className="admin-action-card">
+                                        <h3>Burn Tokens</h3>
+                                        <div className="form-group">
+                                            <label>Address to Burn From</label>
+                                            <input
+                                                type="text"
+                                                value={burnAddress}
+                                                onChange={(e) => setBurnAddress(e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Amount</label>
+                                            <input
+                                                type="number"
+                                                value={burnAmount}
+                                                onChange={(e) => setBurnAmount(e.target.value)}
+                                                className="form-input"
+                                                step="0.000001"
+                                                min="0.000001"
+                                            />
+                                        </div>
+                                        <button onClick={handleBurnTokens} className="mine-btn">
+                                            Burn
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
