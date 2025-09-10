@@ -2775,8 +2775,8 @@ function App() {
                 setMessage(`❌ ${errorData.error || 'Failed to fetch balance'}`);
             }
         } catch (error) {
-            console.error('Error fetching balance:', error);
-            setMessage('❌ Network error fetching balance');
+            // console.error('Error fetching balance:', error);
+            // setMessage('❌ Network error fetching balance');
         }
         setIsLoading(false);
     };
