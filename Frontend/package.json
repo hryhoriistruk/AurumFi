@@ -1,11 +1,17 @@
 {
-  "name": "aurumfi-frontend",
-  "version": "1.0.0",
+  "name": "aurumfi-wallet",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@noble/ed25519": "^1.7.3",
+    "@noble/hashes": "^1.3.3",
+    "bs58": "^5.0.0",
+    "ethers": "^6.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "react-router-dom": "^7.9.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -13,8 +19,12 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://localhost:8081",
-
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -26,5 +36,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "proxy": "http://localhost:8545"
 }

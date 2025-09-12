@@ -1,0 +1,132 @@
+/* Frontend/src/components/Wallet.css */
+.wallet-container {
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.wallet-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+@media (min-width: 768px) {
+    .wallet-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.wallets-list-section {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.wallet-actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.wallet-actions-section input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.wallet-actions-section button {
+    padding: 10px 15px;
+    background-color: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.wallet-actions-section button:hover {
+    background-color: #2d3748;
+}
+
+.wallet-list {
+    list-style: none;
+    padding: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.wallet-item {
+    padding: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wallet-item:last-child {
+    border-bottom: none;
+}
+
+.wallet-item:hover {
+    background-color: #f1f5f9;
+}
+
+.wallet-item.selected {
+    background-color: #e0f2fe;
+    border-left: 4px solid #3b82f6;
+    font-weight: bold;
+}
+
+.wallet-name {
+    flex-grow: 1;
+}
+
+.wallet-address {
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+.remove-btn {
+    background: transparent;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 1.2em;
+    margin-left: 10px;
+}
+
+.selected-wallet-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e9eef6;
+    border-radius: 8px;
+    border: 1px solid #d4d8e0;
+}
+
+.selected-wallet-info h3 {
+    margin-top: 0;
+}
+
+.selected-wallet-info p {
+    margin: 5px 0;
+}
+
+.empty-state {
+    color: #9ca3af;
+    text-align: center;
+    padding: 20px;
+}
