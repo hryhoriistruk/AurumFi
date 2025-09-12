@@ -1,6 +1,0 @@
-node_name = "AurumFi Node"
-difficulty = 2
-genesis_balance = 1000
-mining_reward = 50
-transaction_fee = 1
-chain_file = "chain.json"
